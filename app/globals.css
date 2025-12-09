@@ -1,3 +1,46 @@
+@import "tailwindcss";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* CARDS */
+.card {
+  @apply bg-white p-8 rounded-xl shadow-lg border border-gray-200;
+}
+
+.card-dashboard {
+  @apply bg-white p-6 rounded-2xl shadow-md border border-gray-200 
+         transition hover:shadow-xl hover:-translate-y-1 duration-200;
+}
+
+.card-title {
+  @apply text-lg font-semibold text-gray-700;
+}
+
+.card-number {
+  @apply text-4xl font-bold text-blue-700 mt-3;
+}
+
+/* INPUTS */
+.input {
+  @apply w-full p-3 rounded-lg border border-gray-300 
+         focus:ring-2 focus:ring-blue-500 outline-none;
+}
+
+/* BUTTONS */
+.btn-primary {
+  @apply bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold 
+         hover:bg-blue-700 transition;
+}
+
+/* ITEM CARD */
+.item-card {
+  @apply bg-white p-6 rounded-xl shadow border border-gray-200;
+}
+
+.delete-btn {
+  @apply mt-4 bg-red-500 text-white px-4 py-2 rounded-lg 
+         hover:bg-red-600 transition;
+}

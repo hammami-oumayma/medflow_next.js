@@ -1,264 +1,165 @@
 "use client";
 
-import { useState, useEffect } from "react";
-
-type Doctor = {
-  _id: string;
-  name: string;
-  email: string;
-};
-
-type Appointment = {
-  _id: string;
-  patientId: string;
-  doctorId: { _id: string; name: string } | string;
-  date: string;
-  time: string;
-  reason: string;
-  status: string;
-  doctorIdPopulated?: {
-    _id: string;
-    name: string;
-  };
-};
+import { useEffect, useState } from "react";
+import { FileText, CalendarDays, PlusCircle, ClipboardList } from "lucide-react";
 
 export default function Page() {
-  const [patientId, setPatientId] = useState<string>("");
+  const [activeSection, setActiveSection] = useState("prescriptions");
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-
-  // FORM STATES
-  const [doctorId, setDoctorId] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [reason, setReason] = useState("");
-  const [editId, setEditId] = useState("");
-
-  // ------------------------------------------
-  // LOAD USER + DOCTORS
-  // ------------------------------------------
   useEffect(() => {
     loadMe();
-    loadDoctors();
   }, []);
 
+  // Charger patient connecté
   async function loadMe() {
-    const res = await fetch("/api/me");
+    const me = await fetch("/api/me").then((r) => r.json());
+    if (me?.user?.id) loadPrescriptions(me.user.id);
+  }
+
+  // Charger ses ordonnances
+  async function loadPrescriptions(patientId: string) {
+    setLoading(true);
+    const res = await fetch(`/api/prescriptions?patientId=${patientId}`);
     const data = await res.json();
-    if (!data.user) return;
-
-    setPatientId(data.user.id);
-    loadAppointments(data.user.id);
+    setPrescriptions(data);
+    setLoading(false);
   }
 
-  async function loadDoctors() {
-    const res = await fetch("/api/users?role=DOCTOR");
-    const data = await res.json();
-    setDoctors(data);
-  }
-
-  // ------------------------------------------
-  // LOAD APPOINTMENTS
-  // ------------------------------------------
-  async function loadAppointments(pid: string) {
-    const res = await fetch(`/api/appointments?patientId=${pid}`);
-    const data = await res.json();
-
-    const formatted = data.map((item: any) => ({
-      ...item,
-      doctorIdPopulated: item.doctorId,
-    }));
-
-    setAppointments(formatted);
-  }
-
-  // ------------------------------------------
-  // CREATE
-  // ------------------------------------------
-  async function createAppointment(e: any) {
-    e.preventDefault();
-
-    await fetch("/api/appointments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        patientId,
-        doctorId,
-        date,
-        time,
-        reason,
-      }),
-    });
-
-    resetForm();
-    loadAppointments(patientId);
-  }
-
-  // ------------------------------------------
-  // UPDATE
-  // ------------------------------------------
-  async function updateAppointment() {
-    await fetch("/api/appointments", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: editId,
-        doctorId,
-        date,
-        time,
-        reason,
-      }),
-    });
-
-    resetForm();
-    loadAppointments(patientId);
-  }
-
-  // ------------------------------------------
-  // DELETE
-  // ------------------------------------------
-  async function deleteAppointment(id: string) {
-    await fetch(`/api/appointments?id=${id}`, {
-      method: "DELETE",
-    });
-
-    loadAppointments(patientId);
-  }
-
-  // ------------------------------------------
-  // RESET FORM
-  // ------------------------------------------
-  function resetForm() {
-    setDoctorId("");
-    setDate("");
-    setTime("");
-    setReason("");
-    setEditId("");
-  }
-
-  // ------------------------------------------
-  // UI
-  // ------------------------------------------
   return (
-    <div className="space-y-10">
-      <h1 className="text-3xl font-bold mb-6">Mes Rendez-vous</h1>
+    <div className="space-y-12 pb-20">
 
-      {/* FORMULAIRE */}
-      <section className="p-6 border rounded shadow">
-        <h2 className="text-xl font-semibold mb-3">
-          {editId ? "Modifier le rendez-vous" : "Réserver un rendez-vous"}
-        </h2>
+      <h1 className="text-4xl font-bold text-gray-800">Dashboard Patient</h1>
 
-        <form
-          onSubmit={editId ? updateAppointment : createAppointment}
-          className="grid grid-cols-2 gap-4"
+      {/* ---- CARDS MENU ---- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        {/* CARD RDV */}
+        <div
+          onClick={() => setActiveSection("appointments")}
+          className="p-6 bg-gradient-to-br from-blue-600 to-blue-800 text-white rounded-2xl shadow-lg hover:shadow-xl active:scale-[0.98] cursor-pointer transition-all duration-300"
         >
-          <select
-            value={doctorId}
-            onChange={(e) => setDoctorId(e.target.value)}
-            className="border p-2 rounded"
-            required
-          >
-            <option value="">Choisir médecin</option>
-            {doctors.map((d) => (
-              <option key={d._id} value={d._id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            className="border p-2 rounded"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-
-          <input
-            type="time"
-            className="border p-2 rounded"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            required
-          />
-
-          {/* AJOUT REASON */}
-          <textarea
-            className="border p-2 rounded col-span-2"
-            placeholder="Raison du rendez-vous"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            required
-          />
-
-          <button
-            type="submit"
-            className="col-span-2 bg-indigo-600 text-white p-3 rounded hover:bg-indigo-700"
-          >
-            {editId ? "Modifier" : "Réserver"}
-          </button>
-        </form>
-      </section>
-
-      {/* LISTE RENDEZ-VOUS */}
-      <section className="p-6 border rounded shadow">
-        <h2 className="text-xl font-semibold mb-3">Mes rendez-vous</h2>
-
-        <div className="space-y-3">
-          {appointments.length === 0 && <p>Aucun rendez-vous.</p>}
-
-          {appointments.map((rdv) => (
-            <div
-              key={rdv._id}
-              className="p-4 border rounded flex justify-between items-center"
-            >
-              <div>
-                <p className="font-semibold">
-                  {rdv.date} — {rdv.time}
-                </p>
-
-                <p className="text-sm text-gray-600">
-                  Médecin : {rdv.doctorIdPopulated?.name ?? "—"}
-                </p>
-
-                <p className="text-sm">Motif : {rdv.reason}</p>
-
-                <p className="text-sm text-indigo-600">
-                  Statut : {rdv.status}
-                </p>
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  className="text-blue-600"
-                  onClick={() => {
-                    setEditId(rdv._id);
-                    setDoctorId(
-                      typeof rdv.doctorId === "string"
-                        ? rdv.doctorId
-                        : rdv.doctorId._id
-                    );
-                    setDate(rdv.date);
-                    setTime(rdv.time);
-                    setReason(rdv.reason);
-                  }}
-                >
-                  Modifier
-                </button>
-
-                <button
-                  className="text-red-600"
-                  onClick={() => deleteAppointment(rdv._id)}
-                >
-                  Annuler
-                </button>
-              </div>
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Mes rendez-vous</h2>
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <CalendarDays size={26} />
             </div>
-          ))}
+          </div>
+          <p className="text-sm opacity-90 mt-4">Gérer vos rendez-vous ici.</p>
         </div>
-      </section>
+
+        {/* CARD CRÉER RDV */}
+        <div
+          onClick={() => setActiveSection("create")}
+          className="p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl border border-blue-100 active:scale-[0.98] cursor-pointer transition-all duration-300"
+        >
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-blue-700">Créer RDV</h2>
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-700">
+              <PlusCircle size={26} />
+            </div>
+          </div>
+          <p className="text-gray-700 mt-4">Réserver un rendez-vous.</p>
+        </div>
+
+        {/* CARD ORDONNANCES */}
+        <div
+          onClick={() => setActiveSection("prescriptions")}
+          className="p-6 bg-white rounded-2xl shadow-lg hover:shadow-xl border border-blue-100 active:scale-[0.98] cursor-pointer transition-all duration-300"
+        >
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-blue-700">Ordonnances</h2>
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-700">
+              <FileText size={26} />
+            </div>
+          </div>
+          <p className="text-gray-700 mt-4">
+            Consulter et télécharger vos ordonnances.
+          </p>
+        </div>
+
+      </div>
+
+      {/* ---- SECTION ORDONNANCES ---- */}
+      {activeSection === "prescriptions" && (
+        <div className="space-y-6">
+
+          <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <ClipboardList className="text-blue-600" size={30} />
+            Mes ordonnances
+          </h2>
+
+          {loading ? (
+            <p className="text-gray-600 text-lg">Chargement...</p>
+          ) : prescriptions.length === 0 ? (
+            <p className="text-gray-600 text-lg">Aucune ordonnance trouvée.</p>
+          ) : (
+            <div className="space-y-6">
+
+              {prescriptions.map((p: any) => (
+                <div
+                  key={p._id}
+                  className="p-6 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                  {/* HEADER */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-500">Date</p>
+                      <p className="text-xl font-semibold text-gray-900">
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+
+                    <a
+                      className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-medium"
+                      href={`/api/prescriptions/pdf?id=${p._id}`}
+                    >
+                      Télécharger PDF
+                    </a>
+                  </div>
+
+                  {/* DOCTOR INFO */}
+                  <div className="mt-4">
+                    <p className="font-bold text-gray-800">Médecin</p>
+                    <p className="text-gray-700">{p.doctorId?.name}</p>
+                  </div>
+
+                  {/* MEDICATION LIST */}
+                  <div className="mt-6">
+                    <p className="font-bold text-gray-800 mb-2">Médicaments prescrits :</p>
+
+                    <div className="grid gap-3">
+
+                      {p.medications.map((m: any, i: number) => (
+                        <div
+                          key={i}
+                          className="p-4 bg-gray-50 rounded-xl border border-gray-200"
+                        >
+                          <p className="font-semibold text-gray-900">{m.name}</p>
+
+                          <div className="flex flex-wrap gap-3 mt-2">
+                            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                           Dosage :   {m.dosage}
+                            </span>
+                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm">
+                            Duration :  {m.duration}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import Agenda from "@/models/Agenda";
+import Appointment from "@/models/Appointment";
 
 export async function GET(req: Request) {
   try {
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(agenda);
   } catch (err) {
-    console.error("AGENDA ERROR:", err);
+    console.error("AGENDA GET ERROR:", err);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
@@ -32,9 +33,17 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    const body = await req.json();
+    const { doctorId, appointmentId } = await req.json();
 
-    const saved = await Agenda.create(body);
+    const appointment = await Appointment.findById(appointmentId);
+
+    const saved = await Agenda.create({
+      doctorId,
+      appointmentId,
+      date: appointment.date,
+      time: appointment.time,
+    });
+
     return NextResponse.json(saved, { status: 201 });
   } catch (err) {
     console.error("AGENDA POST ERROR:", err);
