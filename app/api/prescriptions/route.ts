@@ -1,66 +1,49 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import Prescription from "@/models/Prescription";
+import Invoice from "@/models/Invoice";
 
-
-export async function GET(req: Request) {
-  try {
-    await dbConnect();
-
-    const url = new URL(req.url);
-    const patientId = url.searchParams.get("patientId");
-    const doctorId = url.searchParams.get("doctorId");
-
-    if (patientId) {
-      const data = await Prescription.find({ patientId })
-        .populate("doctorId", "name")
-        .lean();
-
-      return NextResponse.json(data);
-    }
-
-    if (doctorId) {
-      const data = await Prescription.find({ doctorId })
-        .populate("patientId", "name")
-        .lean();
-
-      return NextResponse.json(data);
-    }
-
-    return NextResponse.json([]);
-
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
-  }
-}
-
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     await dbConnect();
     const body = await req.json();
 
-    const newPrescription = await Prescription.create(body);
-    return NextResponse.json(newPrescription);
+    const newPrescription = await Prescription.create({
+      patientId: body.patientId,
+      doctorId: body.doctorId,
+      medicines: body.medicines,
+      notes: body.notes,
 
-  } catch (err) {
-    console.error("PRESCRIPTION POST ERROR:", err);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+      // 🟩 AJOUT
+      amount: body.amount ?? 0,
+      status: body.status ?? "non-payée",
+    });
+
+    return NextResponse.json(newPrescription, { status: 201 });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Failed to create" }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request) {
+
+export async function GET(req: NextRequest) {
   try {
     await dbConnect();
+
     const url = new URL(req.url);
-    const id = url.searchParams.get("id");
+    const doctorId = url.searchParams.get("doctorId");
 
-    await Prescription.findByIdAndDelete(id);
+    const query: any = {};
+    if (doctorId) query.doctorId = doctorId;
 
-    return NextResponse.json({ message: "Supprimé" });
+    const prescriptions = await Prescription.find(query)
+      .populate("patientId", "name")
+      .populate("doctorId", "name");
 
-  } catch (err) {
-    return NextResponse.json({ error: "Erreur" }, { status: 500 });
+    return NextResponse.json(prescriptions);
+  } catch (error) {
+    console.error("Error fetching prescriptions:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

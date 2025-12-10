@@ -1,23 +1,44 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, models } from "mongoose";
 
 const PrescriptionSchema = new Schema(
   {
-    doctorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    patientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    appointmentId: { type: Schema.Types.ObjectId, ref: "Appointment", required: true },
-
-    medications: [
+    patientId: {
+      type: Schema.Types.ObjectId,
+      ref: "Patient",
+      required: true,
+    },
+    doctorId: {
+      type: Schema.Types.ObjectId,
+      ref: "Doctor",
+      required: true,
+    },
+    medicines: [
       {
         name: String,
         dosage: String,
-        duration: String,
       },
     ],
+    notes: String,
 
-    notes: { type: String, default: "" },
+    // 🟩 AJOUT ICI
+    amount: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    status: {
+      type: String,
+      enum: ["non-payée", "payée", "en attente"],
+      default: "non-payée",
+    },
+
+    date: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Prescription ||
+export default models.Prescription ||
   mongoose.model("Prescription", PrescriptionSchema);
