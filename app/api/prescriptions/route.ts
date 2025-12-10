@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import Prescription from "@/models/Prescription";
-import Invoice from "@/models/Invoice";
 
+// ---------------------- POST - Créer une ordonnance ----------------------
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
@@ -11,10 +11,8 @@ export async function POST(req: NextRequest) {
     const newPrescription = await Prescription.create({
       patientId: body.patientId,
       doctorId: body.doctorId,
-      medicines: body.medicines,
+      medications: body.medications,    // IMPORTANT : "medications", pas medicines
       notes: body.notes,
-
-      // 🟩 AJOUT
       amount: body.amount ?? 0,
       status: body.status ?? "non-payée",
     });
@@ -26,20 +24,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
-
+// ---------------------- GET - Lister ordonnances ----------------------
 export async function GET(req: NextRequest) {
   try {
     await dbConnect();
 
     const url = new URL(req.url);
+    const patientId = url.searchParams.get("patientId");
     const doctorId = url.searchParams.get("doctorId");
 
     const query: any = {};
+
+    if (patientId) query.patientId = patientId;
     if (doctorId) query.doctorId = doctorId;
+
+    if (!patientId && !doctorId)
+      return NextResponse.json(
+        { error: "Aucun paramètre fourni (patientId ou doctorId)" },
+        { status: 400 }
+      );
 
     const prescriptions = await Prescription.find(query)
       .populate("patientId", "name")
-      .populate("doctorId", "name");
+      .populate("doctorId", "name")
+      .sort({ createdAt: -1 });
 
     return NextResponse.json(prescriptions);
   } catch (error) {

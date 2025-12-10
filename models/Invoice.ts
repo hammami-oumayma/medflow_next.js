@@ -16,6 +16,7 @@ const InvoiceSchema = new Schema(
     },
   },
   { timestamps: true }
+  
 );
 
 export default mongoose.models.Invoice ||

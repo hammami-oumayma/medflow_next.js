@@ -11,6 +11,7 @@ import {
   CalendarCheck,
   UserCircle,
   LogOut,
+  FileText,
 } from "lucide-react";
 
 export default function PatientLayout({ children }: { children: ReactNode }) {
@@ -37,6 +38,12 @@ export default function PatientLayout({ children }: { children: ReactNode }) {
       href: "/dashboard/patient/profil",
       icon: <UserCircle size={20} />,
     },
+    {
+  label: "Ordonnances",
+  href: "/dashboard/patient/prescriptions",
+  icon: <FileText size={20} />,
+},
+
       {
       label: "Logout",
       href: "/api/logout",

@@ -4,37 +4,31 @@ const PrescriptionSchema = new Schema(
   {
     patientId: {
       type: Schema.Types.ObjectId,
-      ref: "Patient",
+      ref: "User",
       required: true,
     },
     doctorId: {
       type: Schema.Types.ObjectId,
-      ref: "Doctor",
+      ref: "User",
       required: true,
     },
-    medicines: [
+
+    medications: [
       {
         name: String,
         dosage: String,
+        duration: String,
       },
     ],
+
     notes: String,
 
-    // 🟩 AJOUT ICI
-    amount: {
-      type: Number,
-      required: false,
-      default: 0,
-    },
+    amount: { type: Number, default: 0 },
+
     status: {
       type: String,
       enum: ["non-payée", "payée", "en attente"],
       default: "non-payée",
-    },
-
-    date: {
-      type: Date,
-      default: Date.now,
     },
   },
   { timestamps: true }
